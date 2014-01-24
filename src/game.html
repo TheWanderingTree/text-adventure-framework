@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<style>
+    .hide {
+        display: none;
+    }
+    #action-menu ol {
+        list-style-type: none;
+    }
+    #action-menu .selected {
+        color: white;
+        background: black;
+        display: inline-block;
+    }
+    #game {
+        margin: 50px 0;
+    }
+    #game > * {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .subliminal {
+        max-width: 100% !important;
+        font-size: 300px;
+        color: #0a0a0a;
+        text-align: center;
+    }
+</style>
+
+<script src="../lib/jquery-1.8.3.js"></script>
+<script src="../lib/underscore.js"></script>
+<script src="../lib/backbone.js"></script>
+<script src="../lib/handlebars-v1.3.0.js"></script>
+
+<script>
+    Handlebars.registerHelper('equal', function (lside, rside, options) {
+        if (lside == rside) {
+            return options.fn();
+        } else {
+            return options.inverse();
+        }
+    });
+
+    $(function () {
+
+        var View = Backbone.View.extend({
+            initialize: function (options) {
+                _.extend(this, options);
+            }
+        });
+
+        var Game = new View({
+            states: {},
+            el: $('body'),
+            messageArea: $('#most-recent-message'),
+            events: {
+                "keyup": function (e) { this.trigger("keyup", e); }
+            },
+            beginGame: beginGame,
+            goto: function (stateName) {
+                if (this.activeState) {
+                    this.activeState.destroy();
+                }
+                var state = this.states[stateName];
+                state.render();
+                this.$el.prepend(state.$el);
+                this.messageArea.text('');
+            },
+            displayMessage: function (html) {
+                this.messageArea.html(html);
+            }
+        });
+
+        var Menu = View.extend({
+            tmpl: Handlebars.compile($('[name=action-menu]').val()),
+            initialize: function () {
+                View.prototype.initialize.apply(this, arguments);
+                if (this.menuItems && this.menuItems.length) {
+                    this.selectedItem = 0;
+                } else {
+                    this.selectedItem = null;
+                }
+                this.listenTo(Game, 'keyup', this.nav);
+            },
+            render: function () {
+                var validItems = _.filter(this.menuItems, function (item) {
+                    if (!_.isFunction(item.showWhen)) {
+                        return true;
+                    } else {
+                        return item.showWhen();
+                    }
+                });
+                var str = this.tmpl({
+                    actions: _.pluck(validItems, "description"),
+                    selectedItem: this.selectedItem
+                });
+                this.setElement($(str));
+            },
+            rerender: function () {
+                var old = this.$el;
+                this.render();
+                old.replaceWith(this.$el);
+            },
+            nav: function (e) {
+                if (this.selectedItem === null) return;
+
+                if (e.which == 38) { // up
+                    this.selectedItem--;
+                    if (this.selectedItem < 0) {
+                        this.selectedItem = 0;
+                    }
+                } else if (e.which == 40) { // down
+                    this.selectedItem++;
+                    if (this.selectedItem > this.menuItems.length - 1) {
+                        this.selectedItem = this.menuItems.length - 1;
+                    }
+                } else if (e.which == 32 || e.which == 13) {
+                    this.chooseItem();
+                }
+                this.rerender();
+            },
+            chooseItem: function () {
+                var description = this.$el.find('.selected').text();
+                var chosenItem = _.find(this.menuItems, function (item) { return item.description == description; });
+                if (chosenItem) {
+                    chosenItem.action.apply(Game.activeState);
+                }
+                if (Game.player.dead) {
+                    Game.activeState.menu.menuItems = deadMenu;
+                    Game.activeState.menu.selectedItem = 0;
+                }
+                this.rerender();
+            },
+            destroy: function () {
+                this.stopListening();
+                this.$el.remove();
+            }
+        });
+
+        var State = View.extend({
+            initialize: function () {
+                View.prototype.initialize.apply(this, arguments);
+                this.tmpl = Handlebars.compile($('[name='+this.name+']').val());
+                Game.states[this.name] = this;
+            },
+            render: function () {
+                this.menu = new Menu({
+                    menuItems: this.menuItems
+                });
+                this.menu.render();
+                this.setElement(this.tmpl({
+                    global: Game.state,
+                    state: Game.activeState,
+                    player: Game.player
+                }));
+                this.$el.append(this.menu.$el);
+
+                Game.activeState = this;
+            },
+            destroy: function () {
+                this.menu.destroy();
+
+                this.stopListening();
+                this.$el.remove();
+            }
+        });
+
+        var deadMenu =  [
+            {
+                description: "Continue.",
+                action: function () { Game.beginGame(); }
+            },
+            {
+                description: "Quit.",
+                action: function () {
+                    $('body').css('background','black');
+                    $('body').html('<div class="subliminal">Fuck You</div>');
+                }
+            }
+        ];
+
+        function beginGame() {
+            Game.state = {
+                rooms: {
+                    lq: {
+                        bedJumps: 0,
+                        bedBroken: false
+                    }
+                }
+            };
+            Game.player = {};
+
+            new State({
+                name: 'title-card',
+                menuItems: [
+                    {
+                        description: "Start Game.",
+                        action: function () { Game.goto('living-quarters'); },
+                        showWhen: function () { return true; }
+                    }
+                ]
+            });
+
+            new State({
+                name: 'living-quarters',
+
+                menuItems: [
+                    {
+                        description: "Jump on bed.",
+                        action: function () {
+                            switch (Game.state.rooms.lq.bedJumps) {
+                                case 0: Game.displayMessage("The bed squeaks a bit."); break;
+                                case 1: Game.displayMessage("The bed sags heavily and makes unsettling noises."); break;
+                                case 2:
+                                    Game.displayMessage("The bed crashes to pieces. You get impaled on a piece of bed frame and die.");
+                                    Game.player.dead = true;
+                                    break;
+                            }
+                            Game.state.rooms.lq.bedJumps++;
+                        },
+                        showWhen: function () { return true; }
+                    },
+                    {
+                        description: "Look under bed.",
+                        action: function () {
+                            Game.displayMessage("A bed jumps out from under your bed and impales you through the chest. You die.");
+                            Game.player.dead = true;
+                        },
+                        showWhen: function () { return true; }
+                    }
+                ]
+            });
+
+            Game.goto('title-card');
+        }
+
+        Game.beginGame();
+    });
+</script>
+
+<body id="game">
+
+    <div id="most-recent-message"></div>
+
+    <textarea name="title-card" class="hide template">
+        <div id="title-card">
+            <h1>A Game</h1>
+        </div>
+    </textarea>
+
+    <textarea name="living-quarters" class="hide template">
+        <div id="living-quarters">
+            Living quarters.<br>
+        </div>
+    </textarea>
+
+    <textarea name="action-menu" class="hide template">
+        <div id="action-menu">
+            <ol>
+            {{#each actions}}
+                <li {{#equal @index ../selectedItem}}class="selected"{{/equal}}>{{this}}</li>
+            {{/each}}
+            </ol>
+        </div>
+    </textarea>
+
+</body>
