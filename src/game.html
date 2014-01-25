@@ -19,6 +19,15 @@
         max-width: 600px;
         margin: 0 auto;
     }
+
+    .player-dead {
+        background: black;
+        color: white;
+    }
+    .player-dead #action-menu .selected {
+        background: white;
+        color: black;
+    }
 </style>
 
 <script src="../lib/jquery-1.8.3.js"></script>
@@ -38,14 +47,13 @@
     <div id="most-recent-message"></div>
 
     <textarea name="title-card" class="hide template">
-        <div id="title-card">
+        <div>
             <h1>A Game</h1>
-            {{#if global.sexyTimes}}<p>Are you sure, now?</p>{{/if}}
         </div>
     </textarea>
 
     <textarea name="living-quarters" class="hide template">
-        <div id="living-quarters">
+        <div>
             Living quarters.<br>
         </div>
     </textarea>

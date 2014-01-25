@@ -10,7 +10,9 @@ $(function () {
                 }
             }
         };
-        Game.player = {};
+        Game.player = {
+            health: 20
+        };
 
         new State({
             name: 'title-card',
@@ -18,13 +20,8 @@ $(function () {
                 {
                     description: "Start Game.",
                     action: function () {
-                        if (!Game.state.sexyTimes) {
-                            Game.state.sexyTimes = true;
-                            return;
-                        }
                         Game.goto('living-quarters');
-                    },
-                    showWhen: function () { return true; }
+                    }
                 }
             ]
         });
@@ -45,8 +42,7 @@ $(function () {
                                 break;
                         }
                         Game.state.rooms.lq.bedJumps++;
-                    },
-                    showWhen: function () { return true; }
+                    }
                 },
                 {
                     description: "Look under bed.",
@@ -57,7 +53,7 @@ $(function () {
                                 Game.player.dead = true;
                                 break;
                             case 1:
-                                Game.displayMessage("An irritated goblin, shapled like a bed, jumps out from under your bed " +
+                                Game.displayMessage("An irritated goblin, shaped like a bed, jumps out from under your bed " +
                                     "and impales you, with grunts of satisfaction. You die.");
                                 Game.player.dead = true;
                                 break;
@@ -66,8 +62,7 @@ $(function () {
                                 Game.state.rooms.lq.playerHeardGrowling = true;
                                 break;
                         }
-                    },
-                    showWhen: function () { return true; }
+                    }
                 },
                 {
                     description: "Say, \"Hello?\ ... Is something there? ...\"",

@@ -69,6 +69,7 @@ $(function () {
             if (Game.player.dead) {
                 Game.activeState.menu.menuItems = deadMenu;
                 Game.activeState.menu.selectedItem = 0;
+                $('body').addClass('player-dead');
             }
             Game.activeState.rerender();
         },
@@ -81,7 +82,12 @@ $(function () {
     var State = View.extend({
         initialize: function () {
             View.prototype.initialize.apply(this, arguments);
-            this.tmpl = Handlebars.compile($('[name='+this.name+']').val());
+            var tmplStr = $('[name='+this.name+']').val();
+            if (tmplStr) {
+                this.tmpl = Handlebars.compile(tmplStr);
+            } else {
+                throw "Oops! No tmplate exists for state: " + this.name;
+            }
             Game.states[this.name] = this;
             this.menu = new Menu({
                 menuItems: this.menuItems
@@ -94,6 +100,7 @@ $(function () {
                 state: Game.activeState,
                 player: Game.player
             }));
+            this.$el.attr('id', this.name);
             this.$el.append(this.menu.$el);
         },
         rerender: function () {
@@ -140,7 +147,10 @@ $(function () {
     var deadMenu =  [
         {
             description: "Restart game.",
-            action: function () { Game.beginGame(); }
+            action: function () {
+                $('body').removeClass('player-dead');
+                Game.beginGame();
+            }
         }
     ];
 
