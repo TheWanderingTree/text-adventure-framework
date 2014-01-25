@@ -22,7 +22,6 @@ $(function () {
             } else {
                 this.selectedItem = null;
             }
-            this.listenTo(Game, 'keyup', this.nav);
         },
         render: function () {
             var validItems = _.filter(this.menuItems, function (item) {
@@ -71,7 +70,7 @@ $(function () {
                 Game.activeState.menu.menuItems = deadMenu;
                 Game.activeState.menu.selectedItem = 0;
             }
-            this.rerender();
+            Game.activeState.rerender();
         },
         destroy: function () {
             this.stopListening();
@@ -84,11 +83,11 @@ $(function () {
             View.prototype.initialize.apply(this, arguments);
             this.tmpl = Handlebars.compile($('[name='+this.name+']').val());
             Game.states[this.name] = this;
-        },
-        render: function () {
             this.menu = new Menu({
                 menuItems: this.menuItems
             });
+        },
+        render: function () {
             this.menu.render();
             this.setElement(this.tmpl({
                 global: Game.state,
@@ -96,8 +95,11 @@ $(function () {
                 player: Game.player
             }));
             this.$el.append(this.menu.$el);
-
-            Game.activeState = this;
+        },
+        rerender: function () {
+            var old = this.$el;
+            this.render();
+            old.replaceWith(this.$el);
         },
         destroy: function () {
             this.menu.destroy();
@@ -112,7 +114,7 @@ $(function () {
         el: $('body'),
         messageArea: $('#most-recent-message'),
         events: {
-            "keyup": function (e) { this.trigger("keyup", e); }
+            "keyup": "keyup"
         },
         goto: function (stateName) {
             if (this.activeState) {
@@ -122,9 +124,16 @@ $(function () {
             state.render();
             this.$el.prepend(state.$el);
             this.messageArea.text('');
+
+            Game.activeState = state;
         },
         displayMessage: function (html) {
             this.messageArea.html(html);
+        },
+        keyup: function (e) {
+            if (this.activeState) {
+                this.activeState.menu.nav(e);
+            }
         }
     });
 
@@ -132,13 +141,6 @@ $(function () {
         {
             description: "Restart game.",
             action: function () { Game.beginGame(); }
-        },
-        {
-            description: "Quit.",
-            action: function () {
-                $('body').css('background','black');
-                $('body').html('');
-            }
         }
     ];
 

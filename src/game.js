@@ -1,5 +1,6 @@
 $(function () {
     Game.beginGame = function () {
+        // Starting state
         Game.state = {
             rooms: {
                 lq: {
@@ -16,7 +17,13 @@ $(function () {
             menuItems: [
                 {
                     description: "Start Game.",
-                    action: function () { Game.goto('living-quarters'); },
+                    action: function () {
+                        if (!Game.state.sexyTimes) {
+                            Game.state.sexyTimes = true;
+                            return;
+                        }
+                        Game.goto('living-quarters');
+                    },
                     showWhen: function () { return true; }
                 }
             ]

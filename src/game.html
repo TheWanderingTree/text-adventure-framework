@@ -19,12 +19,6 @@
         max-width: 600px;
         margin: 0 auto;
     }
-    .subliminal {
-        max-width: 100% !important;
-        font-size: 300px;
-        color: #0a0a0a;
-        text-align: center;
-    }
 </style>
 
 <script src="../lib/jquery-1.8.3.js"></script>
@@ -46,6 +40,7 @@
     <textarea name="title-card" class="hide template">
         <div id="title-card">
             <h1>A Game</h1>
+            {{#if global.sexyTimes}}<p>Are you sure, now?</p>{{/if}}
         </div>
     </textarea>
 
