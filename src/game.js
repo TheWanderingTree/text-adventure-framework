@@ -8,75 +8,117 @@ $(function () {
                     bedBroken: false,
                     playerHeardGrowling: false
                 }
-            }
+            },
+            LeftKeyTime: null,
+            RightKeyTime: null
         };
         Game.player = {
-            health: 20
+            distance: 0,
+            distanceMultiplier: 0,
+            stability: 0,
+            hasFlashbulbs: true,
+            enteredEvent1: false
         };
 
         new State({
             name: 'title-card',
             menuItems: [
                 {
-                    description: "Start Game.",
+                    description: "1: Start Game",
                     action: function () {
-                        Game.goto('living-quarters');
+                        Game.goto('ocean-empty');
+                        setTimeout(function() {
+                            Game.goto('player-dead-drowned');
+                            Game.player.dead = true;
+                            Game.activeState.menu.menuItems = [{description: "1: Restart game", action: function () {$('body').removeClass('player-dead');Game.beginGame();}}];
+                            Game.activeState.menu.selectedItem = 0;
+                            $('body').addClass('player-dead');
+                            Game.activeState.rerender(); },100000);
+                    }
+                }
+            ]
+        });
+
+         new State({
+                    name: 'ocean-empty',
+                    menuItems: [
+                        {
+
+                        }
+                    ]
+         });
+
+          new State({
+                     name: 'player-dead-drowned',
+                     menuItems: [
+                         {
+
+                         }
+                     ]
+          });
+
+        new State({
+            name: 'ocean-1',
+
+            menuItems: [
+                {
+                    description: "1: Walk around the perimeter",
+                    action: function () {
+                        Game.displayMessage("The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...");
+                    }
+                },
+                {
+                    description: "2: Walk across the plateau",
+                    action: function () {
+                        Game.displayMessage("I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...");
+                    }
+                },
+                {
+                    description: "3: Use Flashbulbs",
+                    action: function () {
+                        Game.displayMessage("The plateau was covered in explosive proximity mines, with just a few feet between each one. Around the perimeter, the terrain looked to be rough and uneven.");
+                        Game.player.hasFlashbulbs = false;
+                    },
+                    showWhen: function () {
+                        return Game.player.hasFlashbulbs;
                     }
                 }
             ]
         });
 
         new State({
-            name: 'living-quarters',
+            name: 'ocean-2',
 
             menuItems: [
                 {
-                    description: "Jump on bed.",
+                    description: "1: Option 1",
                     action: function () {
-                        switch (Game.state.rooms.lq.bedJumps) {
-                            case 0: Game.displayMessage("The bed squeaks a bit."); break;
-                            case 1: Game.displayMessage("The bed sags heavily and makes unsettling noises."); break;
-                            case 2:
-                                Game.displayMessage("The bed crashes to pieces. You get impaled on a piece of bed frame and die.");
-                                Game.player.dead = true;
-                                break;
-                        }
-                        Game.state.rooms.lq.bedJumps++;
+                        Game.displayMessage("Message 1");
                     }
                 },
                 {
-                    description: "Look under bed.",
+                    description: "2: Option 2",
                     action: function () {
-                        switch (Game.state.rooms.lq.bedJumps) {
-                            case 0:
-                                Game.displayMessage("A bed jumps out from under your bed and impales you through the chest. You die.");
-                                Game.player.dead = true;
-                                break;
-                            case 1:
-                                Game.displayMessage("An irritated goblin, shaped like a bed, jumps out from under your bed " +
-                                    "and impales you, with grunts of satisfaction. You die.");
-                                Game.player.dead = true;
-                                break;
-                            case 2: Game.displayMessage("You cannot see under the bed because it is sagging so dangerously. " +
-                                "However, you hear growling coming from somewhere down there.");
-                                Game.state.rooms.lq.playerHeardGrowling = true;
-                                break;
-                        }
+                        Game.displayMessage("Message 2");
                     }
                 },
                 {
-                    description: "Say, \"Hello?\ ... Is something there? ...\"",
+                    description: "3: Option 3",
                     action: function () {
-                        Game.displayMessage("An irritated goblin, weasles it's way out from under the half-crushed " +
-                            "bed with a long piece of broken bed frame and impales you, making swarthy thirsty noises. " +
-                            "The last thing you hear is muffled cackling as you die.");
-                        Game.player.dead = true;
+                        Game.displayMessage("Message 3");
                     },
-                    showWhen: function () { return Game.state.rooms.lq.playerHeardGrowling; }
+                    showWhen: function () {
+                        return Game.player.hasFlashbulbs;
+                    }
                 }
             ]
         });
 
         Game.goto('title-card');
+
+
+
     };
+
+
 });

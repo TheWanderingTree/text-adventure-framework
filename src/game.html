@@ -1,60 +1,65 @@
 <!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="game.css" type="text/css"/>
 
-<style>
-    .hide {
-        display: none;
-    }
-    #action-menu ol {
-        list-style-type: none;
-    }
-    #action-menu .selected {
-        color: white;
-        background: black;
-        display: inline-block;
-    }
-    #game {
-        margin: 50px 0;
-    }
-    #game > * {
-        max-width: 600px;
-        margin: 0 auto;
-    }
 
-    .player-dead {
-        background: black;
-        color: white;
-    }
-    .player-dead #action-menu .selected {
-        background: white;
-        color: black;
-    }
-</style>
+    <script src="../lib/jquery-1.8.3.js"></script>
+    <script src="../lib/underscore.js"></script>
+    <script src="../lib/backbone.js"></script>
+    <script src="../lib/handlebars-v1.3.0.js"></script>
+    <script src="framework.js"></script>
+    <script src="game.js"></script>
 
-<script src="../lib/jquery-1.8.3.js"></script>
-<script src="../lib/underscore.js"></script>
-<script src="../lib/backbone.js"></script>
-<script src="../lib/handlebars-v1.3.0.js"></script>
-<script src="framework.js"></script>
-<script src="game.js"></script>
 
-<script>
-    $(function () {
-        Game.beginGame();
-    });
-</script>
+    <script>
+        $(function () {
+            Game.beginGame();
+        });
+    </script>
+</head>
 
 <body id="game">
     <div id="most-recent-message"></div>
 
     <textarea name="title-card" class="hide template">
         <div>
-            <h1>A Game</h1>
+            <h2>A Game</h2>
+        </div>
+    </textarea>
+
+    <textarea name="player-dead-drowned" class="hide template">
+        <div>
+            <h2>GAME OVER</h2>
+            <p>Then I ran out of oxygen and died. Horribly.</p>
         </div>
     </textarea>
 
     <textarea name="living-quarters" class="hide template">
         <div>
-            Living quarters.<br>
+            <h2>Living Quarters</h2>
+        </div>
+    </textarea>
+
+    <textarea name="ocean-empty" class="hide template">
+        <div>
+            <h2>Ocean</h2>
+            <p>The water around me was pitch-black. I began to walk...</p>
+        </div>
+    </textarea>
+
+    <textarea name="ocean-1" class="hide template">
+        <div>
+            <h2>Ocean</h2>
+            <p>I came across an expansive plateau. A faint ticking sound reverberated through the water.</p>
+        </div>
+    </textarea>
+
+    <textarea name="ocean-2" class="hide template">
+        <div>
+            <h2>Ocean</h2>
+            <p>I came across another landmark. It hadn't been implemented yet.</p>
         </div>
     </textarea>
 
