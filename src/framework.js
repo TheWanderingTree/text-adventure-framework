@@ -83,42 +83,43 @@ $(function () {
             this.rerender();
         },
         takeStep: function (foot) {
-            var currentTime = new Date();
+            if (Game.activeState.name == 'ocean-empty') {
+                var currentTime = new Date();
+                if (Game.state.lastFoot) {
+                    if (Game.state.lastFoot == foot) {  //if same leg is used, trip
+                        Game.player.distanceMultiplier = 0;
+                        $('body').addClass('trip');
+                    } else {
+                        var timeDiff = currentTime.getTime() - Game.state.LastStepTime.getTime();
+                        console.log ( "timeDiff: " + timeDiff );
 
-            if (Game.state.lastFoot) {
-                if (Game.state.lastFoot == foot) {  //if same leg is used, trip
-                    Game.player.distanceMultiplier = 0;
-                    $('body').addClass('trip');
-                } else {
-                    var timeDiff = currentTime.getTime() - Game.state.LastStepTime.getTime();
-                    console.log ( "timeDiff: " + timeDiff );
-
-                    if (timeDiff < 450 && timeDiff > 250) { //if speed is a little too fast, increase instability
-                        Game.player.stability--;
-                        if (Game.player.stability > 0) {
-                            $('body').addClass('unstable');
-                        }
-                        else if (Game.player.stability <= 0) { //if chance to trip gets too high, trip
+                        if (timeDiff < 450 && timeDiff > 250) { //if speed is a little too fast, increase instability
+                            Game.player.stability--;
+                            if (Game.player.stability > 0) {
+                                $('body').addClass('unstable');
+                            }
+                            else if (Game.player.stability <= 0) { //if chance to trip gets too high, trip
+                                Game.player.distanceMultiplier = 0;
+                                Game.player.stability = Game.player.maxStability;
+                                $('body').addClass('trip');
+                            }
+                        } else if (timeDiff <= 250) { //if speed is crazy fast, just trip
                             Game.player.distanceMultiplier = 0;
                             Game.player.stability = Game.player.maxStability;
                             $('body').addClass('trip');
                         }
-                    } else if (timeDiff <= 250) { //if speed is crazy fast, just trip
-                        Game.player.distanceMultiplier = 0;
-                        Game.player.stability = Game.player.maxStability;
-                        $('body').addClass('trip');
-                    }
-                    Game.player.distance++; //award 1 distance per step
-                    Game.player.distance += Game.player.distanceMultiplier; //add previous multiplier for chaining good steps
-                    Game.player.distanceMultiplier++; //add to step chain
-                    if (Game.player.distanceMultiplier > 15) { //limit multiplier to 15
-                        Game.player.distanceMultiplier = 15;
+                        Game.player.distance++; //award 1 distance per step
+                        Game.player.distance += Game.player.distanceMultiplier; //add previous multiplier for chaining good steps
+                        Game.player.distanceMultiplier++; //add to step chain
+                        if (Game.player.distanceMultiplier > Game.player.maxDistanceMultiplier) { //limit multiplier
+                            Game.player.distanceMultiplier = Game.player.maxDistanceMultiplier;
+                        }
                     }
                 }
+                Game.state.LastStepTime = currentTime; //store time key is pressed
+                // console.log( "Game.state.LastStepTime: " + Game.state.LastStepTime );
+                Game.state.lastFoot = foot; // set last key pressed
             }
-            Game.state.LastStepTime = currentTime; //store time key is pressed
-            // console.log( "Game.state.LastStepTime: " + Game.state.LastStepTime );
-            Game.state.lastFoot = foot; // set last key pressed
         },
         chooseItem: function () {
             var description = this.$el.find('.selected').text();
@@ -127,11 +128,10 @@ $(function () {
                 chosenItem.action.apply(Game.activeState);
             }
             if (Game.player.dead) {
-                Game.activeState.menu.menuItems = deadMenu;
-                Game.activeState.menu.selectedItem = 0;
-                $('body').addClass('player-dead');
+                Game.showDeadMenu();
+            } else {
+                Game.activeState.rerender();
             }
-            Game.activeState.rerender();
         },
         destroy: function () {
             this.stopListening();
@@ -156,8 +156,8 @@ $(function () {
         render: function () {
             this.menu.render();
             this.setElement(this.tmpl({
-                global: Game.state,
-                state: Game.activeState,
+                state: Game.state,
+                activeState: Game.activeState,
                 player: Game.player
             }));
             this.$el.attr('id', this.name);
@@ -202,6 +202,12 @@ $(function () {
             if (this.activeState) {
                 this.activeState.menu.nav(e);
             }
+        },
+        showDeadMenu: function () {
+            Game.activeState.menu.menuItems = deadMenu;
+            Game.activeState.menu.selectedItem = 0;
+            $('body').addClass('player-dead');
+            Game.activeState.rerender();
         }
     });
 

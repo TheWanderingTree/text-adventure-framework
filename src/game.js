@@ -16,7 +16,8 @@ $(function () {
             distanceMultiplier: 0,
             hasFlashbulbs: true,
             enteredEvent1: false,
-            maxStability: 5
+            maxStability: 5,
+            maxDistanceMultiplier: 15
         };
         Game.player.stability = Game.player.maxStability;
 
@@ -28,12 +29,10 @@ $(function () {
                     action: function () {
                         Game.goto('ocean-empty');
                         setTimeout(function() {
-                            Game.goto('player-dead-drowned');
                             Game.player.dead = true;
-                            Game.activeState.menu.menuItems = [{description: "1: Restart game", action: function () {$('body').removeClass('player-dead');Game.beginGame();}}];
-                            Game.activeState.menu.selectedItem = 0;
-                            $('body').addClass('player-dead');
-                            Game.activeState.rerender(); },100000);
+                            Game.goto('player-dead-drowned');
+                            Game.showDeadMenu();
+                        },100000);
                     }
                 }
             ]
