@@ -1,0 +1,73 @@
+body {
+    font-family: 'Special Elite', cursive;
+    background: #010101;
+    color: #4a9;
+}
+
+h2 {
+    color: #6cc;
+}
+.ocean-1 {
+    background: black;
+}
+.hide {
+    display: none;
+}
+#action-menu ol {
+    list-style-type: none;
+    color: #999;
+}
+#action-menu .selected {
+
+}
+#game {
+    margin: 50px 0;
+}
+#game > * {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.player-dead {
+    background: #220000;
+    color: red;
+}
+.player-dead #action-menu .selected {
+
+}
+
+.trip {
+    background: #010101;
+    animation: tripflash 1s;
+    -webkit-animation: tripflash 1s;
+    }
+
+    @keyframes tripflash
+    {
+        from {background: #886D00;}
+        to {background: #010101;}
+    }
+
+    @-webkit-keyframes tripflash
+    {
+        from {background: #886D00;}
+        to {background: #010101;}
+    }
+
+.unstable {
+    background: #010101;
+    animation: unstable 0.5s;
+    -webkit-animation: unstable 0.5s;
+    }
+
+    @keyframes unstable
+    {
+        from {background: #181100;}
+        to {background: #010101;}
+    }
+
+    @-webkit-keyframes unstable
+    {
+        from {background: #181100;}
+        to {background: #010101;}
+    }
