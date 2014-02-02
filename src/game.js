@@ -1,5 +1,6 @@
 $(function () {
     Game.beginGame = function () {
+
         // Starting state
         Game.state = {
             rooms: {
@@ -8,17 +9,16 @@ $(function () {
                     bedBroken: false,
                     playerHeardGrowling: false
                 }
-            },
-            LeftKeyTime: null,
-            RightKeyTime: null
+            }
         };
         Game.player = {
             distance: 0,
             distanceMultiplier: 0,
-            stability: 0,
             hasFlashbulbs: true,
-            enteredEvent1: false
+            enteredEvent1: false,
+            maxStability: 5
         };
+        Game.player.stability = Game.player.maxStability;
 
         new State({
             name: 'title-card',
