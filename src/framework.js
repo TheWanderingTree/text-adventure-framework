@@ -24,13 +24,17 @@ $(function () {
             }
         },
         render: function () {
-            this.validItems = _.filter(this.menuItems, function (item) {
-                if (!_.isFunction(item.showWhen)) {
-                    return true;
-                } else {
-                    return item.showWhen.apply(Game.activeRoom);
-                }
-            });
+            if (this.room.choiceMade) {
+                this.validItems = [];
+            } else {
+                this.validItems = _.filter(this.menuItems, function (item) {
+                    if (!_.isFunction(item.showWhen)) {
+                        return true;
+                    } else {
+                        return item.showWhen.apply(Game.activeRoom);
+                    }
+                });
+            }
             var str = this.tmpl({
                 actions: _.pluck(this.validItems, "description"),
                 selectedItem: this.selectedItem
@@ -89,9 +93,12 @@ $(function () {
             }
             Game.rooms[this.name] = this;
             this.menu = new Menu({
-                menuItems: this.menuItems || []
+                menuItems: this.menuItems || [],
+                room: this
             });
+            this.setup();
         },
+        setup: function () {},
         render: function () {
             this.menu.render();
             this.setElement(this.tmpl({
@@ -117,22 +124,24 @@ $(function () {
     });
 
     var Game = new View({
+        keycodesBlacklist: [8],
         rooms: {},
         el: $('body'),
         messageArea: $('#most-recent-message'),
         events: {
-            "keyup": "keyup"
+            "keyup": "keyup",
+            "keydown": "keydown"
         },
         goto: function (roomName) {
             if (this.activeRoom) {
                 this.activeRoom.destroy();
             }
             var room = this.rooms[roomName];
+            Game.activeRoom = room;
+
             room.render();
             this.$el.prepend(room.$el);
             this.messageArea.text('');
-
-            Game.activeRoom = room;
         },
         displayMessage: function (html) {
             this.messageArea.html(html);
@@ -142,6 +151,12 @@ $(function () {
                 this.activeRoom.menu.nav(e);
             }
             this.walk(e);
+            this.pullRipcord(e);
+        },
+        keydown: function (e) {
+            if (_.contains(this.keycodesBlacklist, e.which)) {
+                e.preventDefault();
+            }
         },
         walk: function (e) {
             if (!Game.player.canWalk) return;
@@ -173,8 +188,7 @@ $(function () {
             var currentTime = new Date();
             if (Game.state.lastFoot) {
                 if (Game.state.lastFoot == foot) {  //if same leg is used, trip
-                    Game.player.distanceMultiplier = 0;
-                    $('body').addClass('trip');
+                    this.trip();
                 } else {
                     var timeDiff = currentTime.getTime() - Game.state.LastStepTime.getTime();
                     console.log ( "timeDiff: " + timeDiff );
@@ -184,15 +198,11 @@ $(function () {
                         if (Game.player.stability > 0) {
                             $('body').addClass('unstable');
                         }
-                        else if (Game.player.stability < 0) { //if stability gets too low, trip
-                            Game.player.distanceMultiplier = 0;
-                            Game.player.stability = Game.player.maxStability;
-                            $('body').addClass('trip');
+                        else if (Game.player.stability <= 0) { //if stability gets too low, trip
+                            this.trip();
                         }
                     } else if (timeDiff <= Game.player.tripThreshold) { //if speed is crazy fast, just trip
-                        Game.player.distanceMultiplier = 0;
-                        Game.player.stability = Game.player.maxStability;
-                        $('body').addClass('trip');
+                            this.trip();
                     }
                     Game.player.distance++; //award 1 distance per step
                     Game.player.distance += Game.player.distanceMultiplier; //add previous multiplier for chaining good steps
@@ -205,13 +215,21 @@ $(function () {
             Game.state.LastStepTime = currentTime; //store time key is pressed
             // console.log( "Game.state.LastStepTime: " + Game.state.LastStepTime );
             Game.state.lastFoot = foot; // set last key pressed
-
-            if ((Game.activeRoom.mineField == true) && (Game.player.stability == 0)) {
-                Game.player.dead = true;
-                Game.goto('player-dead-exploded');
-                Game.showDeadMenu();
-                Game.playSound('explode.mp3');
+        },
+        trip: function () {
+            Game.player.distanceMultiplier = 0;
+            Game.player.stability = Game.player.maxStability;
+            $('body').addClass('trip');
+            this.trigger('trip');
+        },
+        pullRipcord: function (e) {
+            if (e.which == 8) { //backspace
+                Game.displayMessage("THE RIPCORD HAS BEEN PULLED!");
+                setInterval(this.retraction(),300);
             }
+        },
+        retraction: function () {
+            Game.player.distance -= 20;
         },
         showDeadMenu: function () {
             Game.player.canWalk = false;

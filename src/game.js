@@ -11,20 +11,20 @@ $(function () {
         Game.path = {
             events: [
                 {
-                    distance: 100,
+                    distance: 10,
                     roomNames: ['ocean-plateau']
                 },
                 {
-                    distance: 200,
-                    roomNames: ['ocean-2']
+                    distance: 20,
+                    roomNames: ['ocean-seaweed']
                 },
                 {
-                    distance: 300,
-                    roomNames: []
+                    distance: 30,
+                    roomNames: ['ocean-chasm']
                 },
                 {
-                    distance: 400,
-                    roomNames: []
+                    distance: 40,
+                    roomNames: ['ocean-wreck']
                 }
             ],
             roomsChosen: []
@@ -64,30 +64,31 @@ $(function () {
             ]
         });
 
-         new Room({
-                name: 'ocean-empty'
-         });
-         new Room({
-                name: 'player-dead-drowned'
-         });
-         new Room({
-                name: 'player-dead-exploded'
-         });
+        new Room({
+           name: 'ocean-empty'
+        });
+        new Room({
+           name: 'player-dead-drowned'
+        });
+        new Room({
+           name: 'player-dead-exploded'
+        });
 
         new Room({
             name: 'ocean-plateau',
+
+            setup: function () {
+                this.listenTo(Game,"trip",this.explode);
+            },
 
             menuItems: [
                 {
                     description: "1: Walk around the perimeter",
                     action: function () {
-                        this.perimeter = true;
+                        this.mineField = false;
                         this.choiceMade = true;
                         Game.player.distanceMultiplier = 0;
                         Game.player.maxDistanceMultiplier = 1;
-                    },
-                    showWhen: function () {
-                        return !this.choiceMade;
                     }
                 },
                 {
@@ -97,9 +98,6 @@ $(function () {
                         this.choiceMade = true;
                         Game.player.returnEase--;
                         Game.player.walkThreshold = 900;
-                    },
-                    showWhen: function () {
-                        return !this.choiceMade;
                     }
                 },
                 {
@@ -109,14 +107,24 @@ $(function () {
                         this.sawThings = true;
                     },
                     showWhen: function () {
-                        return Game.player.hasFlashbulbs && !this.choiceMade;
+                        return Game.player.hasFlashbulbs;
                     }
                 }
-            ]
+            ],
+
+            explode: function () {
+                if (Game.activeRoom == this && this.mineField == true) {
+                    Game.player.dead = true;
+                    $('body').removeClass('trip');
+                    Game.goto('player-dead-exploded');
+                    Game.showDeadMenu();
+                    Game.playSound('explode.mp3');
+                }
+            }
         });
 
         new Room({
-            name: 'ocean-2',
+            name: 'ocean-seaweed',
 
             menuItems: [
                 {
@@ -127,28 +135,24 @@ $(function () {
                         Game.player.returnEase--;
                         Game.player.stability = 1;
                         Game.player.maxStability = 1;
-                        Game.displayMessage("Message 1");
-                    },
-                    showWhen: function () {
-                        return !this.choiceMade;
                     }
                 },
                 {
-                    description: "2: Option 2",
+                    description: "2: Circumvent the seaweed",
                     action: function () {
-                        Game.displayMessage("Message 2");
-                    }
-                },
-                {
-                    description: "3: Option 3",
-                    action: function () {
-                        Game.displayMessage("Message 3");
-                    },
-                    showWhen: function () {
-                        return Game.player.hasFlashbulbs;
+                        this.choiceMade = true;
+                        this.seaweed = false;
                     }
                 }
             ]
+        });
+
+        new Room({
+               name: 'ocean-chasm'
+        });
+
+        new Room({
+               name: 'ocean-wreck'
         });
 
         Game.goto('title-card');

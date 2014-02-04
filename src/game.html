@@ -61,18 +61,16 @@
             <h2>Ocean</h2>
             {{#if activeRoom.choiceMade}}
                 {{#if activeRoom.sawThings}}
-                    {{#if activeRoom.perimeter}}
-                    <p>The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...</p>
-                    {{/if}}
                     {{#if activeRoom.mineField}}
                     <p>I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...</p>
+                    {{else}}
+                    <p>The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...</p>
                     {{/if}}
                 {{else}}
-                    {{#if activeRoom.perimeter}}
-                    <p>I decided to avoid the ticking sound. I edged around the perimeter, as best I could.</p>
-                    {{/if}}
                     {{#if activeRoom.mineField}}
                     <p>I continued to walk across its majestic flat landscape.</p>
+                    {{else}}
+                    <p>I decided to avoid the ticking sound. I edged around the perimeter, as best I could.</p>
                     {{/if}}
                 {{/if}}
             {{else}}
@@ -85,10 +83,32 @@
         </div>
     </textarea>
 
-    <textarea name="ocean-2" class="hide template">
+    <textarea name="ocean-seaweed" class="hide template">
         <div>
             <h2>Ocean</h2>
-            <p>I came across another landmark. It hadn't been implemented yet.</p>
+            {{#if activeRoom.choiceMade}}
+                {{#if activeRoom.seaweed}}
+                <p>I walked with some difficulty through the squishy seaweed.</p>
+                {{else}}
+                <p>I decided to avoid the seaweed.</p>
+                {{/if}}
+            {{else}}
+            <p>I came across seaweed.</p>
+            {{/if}}
+        </div>
+    </textarea>
+
+    <textarea name="ocean-chasm" class="hide template">
+        <div>
+            <h2>Ocean</h2>
+            <p>I came across a chasm.</p>
+        </div>
+    </textarea>
+
+    <textarea name="ocean-wreck" class="hide template">
+        <div>
+            <h2>Ocean</h2>
+            <p>I came across a shipwreck.</p>
         </div>
     </textarea>
 
