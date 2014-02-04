@@ -2,97 +2,135 @@ $(function () {
     Game.beginGame = function () {
 
         // Starting state
+        Game.rooms = {};
         Game.state = {
             rooms: {
-                lq: {
-                    bedJumps: 0,
-                    bedBroken: false,
-                    playerHeardGrowling: false
-                }
+
             }
         };
+        Game.path = {
+            events: [
+                {
+                    distance: 100,
+                    roomNames: ['ocean-plateau']
+                },
+                {
+                    distance: 200,
+                    roomNames: ['ocean-2']
+                },
+                {
+                    distance: 300,
+                    roomNames: []
+                },
+                {
+                    distance: 400,
+                    roomNames: []
+                }
+            ],
+            roomsChosen: []
+        }
         Game.player = {
-            distance: 0,
-            distanceMultiplier: 0,
+            canWalk: true,
             hasFlashbulbs: true,
-            enteredEvent1: false,
+            distance: 0,
+            walkThreshold: 450,
+            distanceMultiplier: 0,
+            maxDistanceMultiplier: 4,
             maxStability: 5,
-            maxDistanceMultiplier: 15
+            returnEase: 3
         };
         Game.player.stability = Game.player.maxStability;
+        Game.player.tripThreshold = Game.player.walkThreshold - 200;
 
-        new State({
+        Game.drown = function () {
+            Game.playSound('test-bubbling.mp3');
+            Game.player.dead = true;
+            Game.goto('player-dead-drowned');
+            Game.showDeadMenu();
+        }
+
+        new Room({
             name: 'title-card',
             menuItems: [
                 {
                     description: "1: Start Game",
                     action: function () {
                         Game.goto('ocean-empty');
-                        setTimeout(function() {
-                            Game.player.dead = true;
-                            Game.goto('player-dead-drowned');
-                            Game.showDeadMenu();
-                        },100000);
+                        Game.playSoundForever('desolation.mp3');
+
+                        setTimeout(Game.drown,102000);
                     }
                 }
             ]
         });
 
-         new State({
-                    name: 'ocean-empty',
-                    menuItems: [
-                        {
-
-                        }
-                    ]
+         new Room({
+                name: 'ocean-empty'
+         });
+         new Room({
+                name: 'player-dead-drowned'
+         });
+         new Room({
+                name: 'player-dead-exploded'
          });
 
-          new State({
-                     name: 'player-dead-drowned',
-                     menuItems: [
-                         {
-
-                         }
-                     ]
-          });
-
-        new State({
-            name: 'ocean-1',
+        new Room({
+            name: 'ocean-plateau',
 
             menuItems: [
                 {
                     description: "1: Walk around the perimeter",
                     action: function () {
-                        Game.displayMessage("The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...");
+                        this.perimeter = true;
+                        this.choiceMade = true;
+                        Game.player.distanceMultiplier = 0;
+                        Game.player.maxDistanceMultiplier = 1;
+                    },
+                    showWhen: function () {
+                        return !this.choiceMade;
                     }
                 },
                 {
                     description: "2: Walk across the plateau",
                     action: function () {
-                        Game.displayMessage("I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...");
+                        this.mineField = true;
+                        this.choiceMade = true;
+                        Game.player.returnEase--;
+                        Game.player.walkThreshold = 900;
+                    },
+                    showWhen: function () {
+                        return !this.choiceMade;
                     }
                 },
                 {
                     description: "3: Use Flashbulbs",
                     action: function () {
-                        Game.displayMessage("The plateau was covered in explosive proximity mines, with just a few feet between each one. Around the perimeter, the terrain looked to be rough and uneven.");
                         Game.player.hasFlashbulbs = false;
+                        this.sawThings = true;
                     },
                     showWhen: function () {
-                        return Game.player.hasFlashbulbs;
+                        return Game.player.hasFlashbulbs && !this.choiceMade;
                     }
                 }
             ]
         });
 
-        new State({
+        new Room({
             name: 'ocean-2',
 
             menuItems: [
                 {
-                    description: "1: Option 1",
+                    description: "1: Go through the seaweed",
                     action: function () {
+                        this.seaweed = true;
+                        this.choiceMade = true;
+                        Game.player.returnEase--;
+                        Game.player.stability = 1;
+                        Game.player.maxStability = 1;
                         Game.displayMessage("Message 1");
+                    },
+                    showWhen: function () {
+                        return !this.choiceMade;
                     }
                 },
                 {
@@ -114,9 +152,6 @@ $(function () {
         });
 
         Game.goto('title-card');
-
-
-
     };
 
 

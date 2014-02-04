@@ -36,6 +36,13 @@
         </div>
     </textarea>
 
+    <textarea name="player-dead-exploded" class="hide template">
+        <div>
+            <h2>GAME OVER</h2>
+            <p>A violent explosion tore me apart.</p>
+        </div>
+    </textarea>
+
     <textarea name="living-quarters" class="hide template">
         <div>
             <h2>Living Quarters</h2>
@@ -49,10 +56,32 @@
         </div>
     </textarea>
 
-    <textarea name="ocean-1" class="hide template">
+    <textarea name="ocean-plateau" class="hide template">
         <div>
             <h2>Ocean</h2>
-            <p>I came across an expansive plateau. A faint ticking sound reverberated through the water.</p>
+            {{#if activeRoom.choiceMade}}
+                {{#if activeRoom.sawThings}}
+                    {{#if activeRoom.perimeter}}
+                    <p>The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...</p>
+                    {{/if}}
+                    {{#if activeRoom.mineField}}
+                    <p>I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...</p>
+                    {{/if}}
+                {{else}}
+                    {{#if activeRoom.perimeter}}
+                    <p>I decided to avoid the ticking sound. I edged around the perimeter, as best I could.</p>
+                    {{/if}}
+                    {{#if activeRoom.mineField}}
+                    <p>I continued to walk across its majestic flat landscape.</p>
+                    {{/if}}
+                {{/if}}
+            {{else}}
+                {{#if activeRoom.sawThings}}
+                <p>The plateau was covered in explosive proximity mines, with just a few feet between each one. Around the perimeter, the terrain looked to be rough and uneven.</p>
+                {{else}}
+                <p>I came across an expansive plateau. A faint ticking sound reverberated through the water.</p>
+                {{/if}}
+            {{/if}}
         </div>
     </textarea>
 
