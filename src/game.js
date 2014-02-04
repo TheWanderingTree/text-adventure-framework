@@ -9,21 +9,25 @@ $(function () {
             }
         };
         Game.path = {
-            events: [
+            landmarks: [
                 {
-                    distance: 10,
+                    distance: 0,
+                    roomNames: ['ocean-empty']
+                },
+                {
+                    distance: 100,
                     roomNames: ['ocean-plateau']
                 },
                 {
-                    distance: 20,
+                    distance: 200,
                     roomNames: ['ocean-seaweed']
                 },
                 {
-                    distance: 30,
+                    distance: 300,
                     roomNames: ['ocean-chasm']
                 },
                 {
-                    distance: 40,
+                    distance: 400,
                     roomNames: ['ocean-wreck']
                 }
             ],
@@ -55,10 +59,10 @@ $(function () {
                 {
                     description: "1: Start Game",
                     action: function () {
-                        Game.goto('ocean-empty');
+                        Game.chooseNextLandmark();
                         Game.playSoundForever('desolation.mp3');
 
-                        setTimeout(Game.drown,102000);
+                        Game.state.oxygenTimeoutId = setTimeout(Game.drown,102000);
                     }
                 }
             ]

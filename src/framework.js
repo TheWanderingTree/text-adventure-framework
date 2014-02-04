@@ -124,12 +124,11 @@ $(function () {
     });
 
     var Game = new View({
-        keycodesBlacklist: [8],
+        keycodesPreventDefaultBlacklist: [8],
         rooms: {},
         el: $('body'),
         messageArea: $('#most-recent-message'),
         events: {
-            "keyup": "keyup",
             "keydown": "keydown"
         },
         goto: function (roomName) {
@@ -146,17 +145,16 @@ $(function () {
         displayMessage: function (html) {
             this.messageArea.html(html);
         },
-        keyup: function (e) {
+        keydown: function (e) {
+            if (_.contains(this.keycodesPreventDefaultBlacklist, e.which)) {
+                e.preventDefault();
+            }
+
             if (this.activeRoom) {
                 this.activeRoom.menu.nav(e);
             }
             this.walk(e);
             this.pullRipcord(e);
-        },
-        keydown: function (e) {
-            if (_.contains(this.keycodesBlacklist, e.which)) {
-                e.preventDefault();
-            }
         },
         walk: function (e) {
             if (!Game.player.canWalk) return;
@@ -171,18 +169,21 @@ $(function () {
                 this.takeStep('Right');
             }
 
-            var nextEvent = Game.path.events[Game.path.roomsChosen.length];
-            console.log("nextEvent.distance: ", nextEvent.distance, " Game.player.distance: ", Game.player.distance);
-            if (Game.player.distance >= nextEvent.distance) {
-                var roomChosen = _.sample(nextEvent.roomNames);
-                Game.path.roomsChosen.push(roomChosen);
-                Game.goto(roomChosen);
-            }
+            this.chooseNextLandmark();
 
             console.log ( "walkThreshold: " + Game.player.walkThreshold );
             console.log ( "stability: " + Game.player.stability );
             console.log ( "distanceMultiplier: " + Game.player.distanceMultiplier );
             console.log ( "returnEase: " + Game.player.returnEase );
+        },
+        chooseNextLandmark: function () {
+            var nextLandmark = Game.path.landmarks[Game.path.roomsChosen.length];
+            console.log("nextLandmark.distance: ", nextLandmark.distance, " Game.player.distance: ", Game.player.distance);
+            if (Game.player.distance >= nextLandmark.distance) {
+                var roomChosen = _.sample(nextLandmark.roomNames);
+                Game.path.roomsChosen.push(roomChosen);
+                Game.goto(roomChosen);
+            }
         },
         takeStep: function (foot) {
             var currentTime = new Date();
@@ -225,11 +226,24 @@ $(function () {
         pullRipcord: function (e) {
             if (e.which == 8) { //backspace
                 Game.displayMessage("THE RIPCORD HAS BEEN PULLED!");
-                setInterval(this.retraction(),300);
+                Game.path.ripcordIntervalId = setInterval(this.retraction,300);
             }
         },
         retraction: function () {
+            var prevDistance = Game.path.landmarks[Game.path.roomsChosen.length - 1].distance;
+            if (Game.player.distance < prevDistance) {
+                Game.path.roomsChosen.pop();
+                var prevRoom = _.last(Game.path.roomsChosen);
+                if (prevRoom) {
+                    Game.goto(prevRoom);
+                } else {
+                    clearInterval(Game.path.ripcordIntervalId);
+                    clearTimeout(Game.state.oxygenTimeoutId);
+                    Game.displayMessage("YOU HAVE RETURNED TO THE SUBMARINE... ALIVE!");
+                }
+            }
             Game.player.distance -= 20;
+            console.log(Game.player.distance);
         },
         showDeadMenu: function () {
             Game.player.canWalk = false;
