@@ -6,7 +6,9 @@ $(function () {
         Game.state = {
             rooms: {
 
-            }
+            },
+            retractionTime: 0,
+            ripcordSpeed: 20
         };
         Game.path = {
             landmarks: [
@@ -41,7 +43,7 @@ $(function () {
             distanceMultiplier: 0,
             maxDistanceMultiplier: 4,
             maxStability: 5,
-            returnEase: 3
+            obstacleProbability: 25
         };
         Game.player.stability = Game.player.maxStability;
         Game.player.tripThreshold = Game.player.walkThreshold - 200;
@@ -53,6 +55,11 @@ $(function () {
             Game.showDeadMenu();
         }
 
+        Game.returnSafe = function () {
+            Game.goto('submarine-airlock')
+            Game.showSurviveMenu();
+        }
+
         new Room({
             name: 'title-card',
             menuItems: [
@@ -61,7 +68,6 @@ $(function () {
                     action: function () {
                         Game.chooseNextLandmark();
                         Game.playSoundForever('desolation.mp3');
-
                         Game.state.oxygenTimeoutId = setTimeout(Game.drown,102000);
                     }
                 }
@@ -77,7 +83,9 @@ $(function () {
         new Room({
            name: 'player-dead-exploded'
         });
-
+        new Room({
+           name: 'submarine-airlock'
+        });
         new Room({
             name: 'ocean-plateau',
 
@@ -100,7 +108,7 @@ $(function () {
                     action: function () {
                         this.mineField = true;
                         this.choiceMade = true;
-                        Game.player.returnEase--;
+                        Game.player.obstacleProbability += 20;
                         Game.player.walkThreshold = 900;
                     }
                 },
@@ -136,7 +144,7 @@ $(function () {
                     action: function () {
                         this.seaweed = true;
                         this.choiceMade = true;
-                        Game.player.returnEase--;
+                        Game.player.obstacleProbability += 10;
                         Game.player.stability = 1;
                         Game.player.maxStability = 1;
                     }

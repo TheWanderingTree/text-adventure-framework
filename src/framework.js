@@ -174,7 +174,7 @@ $(function () {
             console.log ( "walkThreshold: " + Game.player.walkThreshold );
             console.log ( "stability: " + Game.player.stability );
             console.log ( "distanceMultiplier: " + Game.player.distanceMultiplier );
-            console.log ( "returnEase: " + Game.player.returnEase );
+            console.log ( "obstacleProbability: " + Game.player.obstacleProbability );
         },
         chooseNextLandmark: function () {
             var nextLandmark = Game.path.landmarks[Game.path.roomsChosen.length];
@@ -226,24 +226,41 @@ $(function () {
         pullRipcord: function (e) {
             if (e.which == 8) { //backspace
                 Game.displayMessage("THE RIPCORD HAS BEEN PULLED!");
-                Game.path.ripcordIntervalId = setInterval(this.retraction,300);
+                this.obstacleProbabilitized = new Probability({
+                    p: Game.player.obstacleProbability + '%',
+                    f: _.bind(this.triggerRetractionObstacle, this)
+                });
+                Game.path.ripcordIntervalId = setInterval(_.bind(this.retraction, this),300);
             }
         },
         retraction: function () {
+            Game.state.retractionTime++;
+            Game.player.distance -= Game.state.ripcordSpeed;
             var prevDistance = Game.path.landmarks[Game.path.roomsChosen.length - 1].distance;
             if (Game.player.distance < prevDistance) {
                 Game.path.roomsChosen.pop();
                 var prevRoom = _.last(Game.path.roomsChosen);
                 if (prevRoom) {
                     Game.goto(prevRoom);
-                } else {
-                    clearInterval(Game.path.ripcordIntervalId);
-                    clearTimeout(Game.state.oxygenTimeoutId);
-                    Game.displayMessage("YOU HAVE RETURNED TO THE SUBMARINE... ALIVE!");
                 }
             }
-            Game.player.distance -= 20;
-            console.log(Game.player.distance);
+            if (Game.player.distance > 0) {
+                if (Game.state.retractionTime%2 == 0) {
+                    console.log("Roll the muthafuckin' dice!");
+                    this.obstacleProbabilitized();
+                }
+            } else {
+                clearInterval(Game.path.ripcordIntervalId);
+                clearTimeout(Game.state.oxygenTimeoutId);
+                Game.displayMessage("YOU HAVE RETURNED TO THE SUBMARINE... ALIVE!");
+                Game.returnSafe();
+            }
+            console.log("Game.player.distance: " + Game.player.distance);
+            console.log("Game.state.retractionTime: " + Game.state.retractionTime);
+
+        },
+        triggerRetractionObstacle: function () {
+            console.log("Obstacle Triggered!")
         },
         showDeadMenu: function () {
             Game.player.canWalk = false;
@@ -251,6 +268,14 @@ $(function () {
             Game.activeRoom.menu.menuItems = deadMenu;
             Game.activeRoom.menu.selectedItem = 0;
             $('body').addClass('player-dead');
+            Game.activeRoom.rerender();
+        },
+        showSurviveMenu: function () {
+            Game.player.canWalk = false;
+            Game.pauseSound('desolation.mp3');
+            Game.activeRoom.menu.menuItems = surviveMenu;
+            Game.activeRoom.menu.selectedItem = 0;
+            $('body').addClass('player-survives');
             Game.activeRoom.rerender();
         },
         playSound: function (filename) {
@@ -272,6 +297,16 @@ $(function () {
             description: "1: Restart game",
             action: function () {
                 $('body').removeClass('player-dead');
+                Game.beginGame();
+            }
+        }
+    ];
+
+    var surviveMenu =  [
+        {
+            description: "1: Dive again",
+            action: function () {
+                $('body').removeClass('player-survives');
                 Game.beginGame();
             }
         }

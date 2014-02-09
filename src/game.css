@@ -32,8 +32,9 @@ h2 {
     background: #220000;
     color: red;
 }
-.player-dead #action-menu .selected {
-
+.player-survives {
+    background: #002222;
+    color: cyan;
 }
 
 .trip {
