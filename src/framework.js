@@ -26,6 +26,7 @@ $(function () {
         render: function () {
             if (this.room.choiceMade) {
                 this.validItems = [];
+                Game.player.canWalk = true;
             } else {
                 this.validItems = _.filter(this.menuItems, function (item) {
                     if (!_.isFunction(item.showWhen)) {
@@ -141,6 +142,9 @@ $(function () {
             room.render();
             this.$el.prepend(room.$el);
             this.messageArea.text('');
+            if (!(Game.activeRoom.choiceMade)) {
+                Game.player.canWalk = false;
+            };
         },
         displayMessage: function (html) {
             this.messageArea.html(html);
@@ -226,11 +230,13 @@ $(function () {
         pullRipcord: function (e) {
             if (e.which == 8) { //backspace
                 Game.displayMessage("THE RIPCORD HAS BEEN PULLED!");
+                Game.state.exploring = false;
                 this.obstacleProbabilitized = new Probability({
                     p: Game.player.obstacleProbability + '%',
                     f: _.bind(this.triggerRetractionObstacle, this)
                 });
-                Game.path.ripcordIntervalId = setInterval(_.bind(this.retraction, this),300);
+                Game.path.ripcordIntervalId = setInterval(_.bind(this.retraction, this),1500);
+                Game.activeRoom.rerender();
             }
         },
         retraction: function () {

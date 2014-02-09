@@ -60,32 +60,44 @@
     <textarea name="ocean-empty" class="hide template">
         <div>
             <h2>Ocean</h2>
+            {{#if state.exploring}}
             <p>The water around me was pitch-black. I began to walk...</p>
+            {{else}}
+            <p>I was close to the submarine now... Almost safe.</p>
+            {{/if}}
         </div>
     </textarea>
 
     <textarea name="ocean-plateau" class="hide template">
         <div>
             <h2>Ocean</h2>
-            {{#if activeRoom.choiceMade}}
-                {{#if activeRoom.sawThings}}
-                    {{#if activeRoom.mineField}}
-                    <p>I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...</p>
+            {{#if state.exploring}}
+                {{#if activeRoom.choiceMade}}
+                    {{#if activeRoom.sawThings}}
+                        {{#if activeRoom.mineField}}
+                        <p>I didn't have time to circle around. I pushed forward into the minefield, confident that I could slip through unharmed...</p>
+                        {{else}}
+                        <p>The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...</p>
+                        {{/if}}
                     {{else}}
-                    <p>The mines seemed like an unnecessary risk. I turned to the left and began trudging along the perimeter of the plateau...</p>
+                        {{#if activeRoom.mineField}}
+                        <p>I continued to walk across its majestic flat landscape.</p>
+                        {{else}}
+                        <p>I decided to avoid the ticking sound. I edged around the perimeter, as best I could.</p>
+                        {{/if}}
                     {{/if}}
                 {{else}}
-                    {{#if activeRoom.mineField}}
-                    <p>I continued to walk across its majestic flat landscape.</p>
+                    {{#if activeRoom.sawThings}}
+                    <p>The plateau was covered in explosive proximity mines, with just a few feet between each one. Around the perimeter, the terrain looked to be rough and uneven.</p>
                     {{else}}
-                    <p>I decided to avoid the ticking sound. I edged around the perimeter, as best I could.</p>
+                    <p>I came across an expansive plateau. A faint ticking sound reverberated through the water.</p>
                     {{/if}}
                 {{/if}}
             {{else}}
                 {{#if activeRoom.sawThings}}
-                <p>The plateau was covered in explosive proximity mines, with just a few feet between each one. Around the perimeter, the terrain looked to be rough and uneven.</p>
+                <p>I could hear the mines again as the ripcord pulled me onto the plateau...</p>
                 {{else}}
-                <p>I came across an expansive plateau. A faint ticking sound reverberated through the water.</p>
+                <p>The ticking sound grew louder again as the ripcord pulled me onto the plateau...</p>
                 {{/if}}
             {{/if}}
         </div>

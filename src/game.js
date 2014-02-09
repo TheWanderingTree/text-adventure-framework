@@ -8,7 +8,8 @@ $(function () {
 
             },
             retractionTime: 0,
-            ripcordSpeed: 20
+            ripcordSpeed: 20,
+            exploring: true
         };
         Game.path = {
             landmarks: [
@@ -36,7 +37,7 @@ $(function () {
             roomsChosen: []
         }
         Game.player = {
-            canWalk: true,
+            canWalk: false,
             hasFlashbulbs: true,
             distance: 0,
             walkThreshold: 450,
@@ -75,7 +76,11 @@ $(function () {
         });
 
         new Room({
-           name: 'ocean-empty'
+           name: 'ocean-empty',
+
+           setup: function () {
+               this.choiceMade = true;
+           },
         });
         new Room({
            name: 'player-dead-drowned'
