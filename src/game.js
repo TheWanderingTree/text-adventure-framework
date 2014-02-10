@@ -77,12 +77,27 @@ $(function () {
         });
 
         new Room({
-           name: 'ocean-empty',
+            name: 'ocean-empty',
 
-           setup: function () {
-               this.choiceMade = true;
-           },
+            setup: function () {
+                this.choiceMade = true;
+            },
+
+            obstacles: [
+                {
+                    description: "I sensed something approaching on my left...",
+                    sound: "tick.wav",
+                    toAvoid: Game.AVOID_OPTIONS.LEFT,
+                    onFail: function () { this.snagged(); }
+                }
+            ],
+
+            snagged: function () {
+                $('body').addClass('snag');
+                Game.playSound('snagged.wav');
+            }
         });
+
         new Room({
            name: 'player-dead-drowned'
         });
@@ -122,7 +137,7 @@ $(function () {
                     sound: "tick.wav",
                     toAvoid: Game.AVOID_OPTIONS.BOTH,
                     onFail: function () { this.explode(); }
-                },
+                }
             ],
 
             menuItems: [
