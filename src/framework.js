@@ -125,6 +125,11 @@ $(function () {
     });
 
     var Game = new View({
+        AVOID_OPTIONS: {
+            LEFT: "left",
+            RIGHT: "right",
+            BOTH: "both"
+        },
         keycodesPreventDefaultBlacklist: [8],
         rooms: {},
         el: $('body'),
@@ -159,6 +164,7 @@ $(function () {
             }
             this.walk(e);
             this.pullRipcord(e);
+            this.obstacleResponse(e);
         },
         walk: function (e) {
             if (!Game.player.canWalk) return;
@@ -192,40 +198,41 @@ $(function () {
         takeStep: function (foot) {
             var currentTime = new Date();
             if (Game.state.lastFoot) {
-                if (Game.state.lastFoot == foot) {  //if same leg is used, trip
-                    this.trip();
-                } else {
-                    var timeDiff = currentTime.getTime() - Game.state.LastStepTime.getTime();
-                    console.log ( "timeDiff: " + timeDiff );
+                var timeDiff = currentTime.getTime() - Game.state.LastStepTime.getTime();
+                console.log ( "timeDiff: " + timeDiff );
 
-                    if (timeDiff < Game.player.walkThreshold && timeDiff > Game.player.tripThreshold) { //if speed is a little too fast, decrease stability
-                        Game.player.stability--;
-                        if (Game.player.stability > 0) {
-                            $('body').addClass('unstable');
-                        }
-                        else if (Game.player.stability <= 0) { //if stability gets too low, trip
-                            this.trip();
-                        }
-                    } else if (timeDiff <= Game.player.tripThreshold) { //if speed is crazy fast, just trip
-                            this.trip();
-                    }
+                var usedCorrectFoot = !(Game.state.lastFoot == foot),
+                    isSteppingGood = timeDiff > Game.player.walkThreshold,
+                    becameUnstable = !isSteppingGood && timeDiff > Game.player.tripThreshold;
+
+                if (becameUnstable) {
+                    Game.player.stability--;
+                }
+
+                var isTripping = !usedCorrectFoot || Game.player.stability <= 0 || timeDiff <= Game.player.tripThreshold;
+
+                if (isTripping) {
+                    Game.player.distanceMultiplier = 0;
+                    Game.player.stability = Game.player.maxStability;
+                    $('body').addClass('trip');
+                    console.log('TRIP!');
+                    this.trigger('trip');
+                } else if (isSteppingGood || becameUnstable) {
                     Game.player.distance++; //award 1 distance per step
                     Game.player.distance += Game.player.distanceMultiplier; //add previous multiplier for chaining good steps
                     Game.player.distanceMultiplier++; //add to step chain
-                    if (Game.player.distanceMultiplier > Game.player.maxDistanceMultiplier) { //limit multiplier
-                        Game.player.distanceMultiplier = Game.player.maxDistanceMultiplier;
+
+                    if (becameUnstable) {
+                        $('body').addClass('unstable');
                     }
+                }
+                if (Game.player.distanceMultiplier > Game.player.maxDistanceMultiplier) { //limit multiplier
+                    Game.player.distanceMultiplier = Game.player.maxDistanceMultiplier;
                 }
             }
             Game.state.LastStepTime = currentTime; //store time key is pressed
             // console.log( "Game.state.LastStepTime: " + Game.state.LastStepTime );
             Game.state.lastFoot = foot; // set last key pressed
-        },
-        trip: function () {
-            Game.player.distanceMultiplier = 0;
-            Game.player.stability = Game.player.maxStability;
-            $('body').addClass('trip');
-            this.trigger('trip');
         },
         pullRipcord: function (e) {
             if (e.which == 8) { //backspace
@@ -240,8 +247,13 @@ $(function () {
             }
         },
         retraction: function () {
+            if (Game.path.encounteringObstacle) return;
+
             Game.state.retractionTime++;
             Game.player.distance -= Game.state.ripcordSpeed;
+            console.log("------------------------------------------------------------------");
+            console.log("Game.state.retractionTime: " + Game.state.retractionTime);
+            console.log("Game.player.distance: " + Game.player.distance);
             var prevDistance = Game.path.landmarks[Game.path.roomsChosen.length - 1].distance;
             if (Game.player.distance < prevDistance) {
                 Game.path.roomsChosen.pop();
@@ -252,7 +264,7 @@ $(function () {
             }
             if (Game.player.distance > 0) {
                 if (Game.state.retractionTime%2 == 0) {
-                    console.log("Roll the muthafuckin' dice!");
+                    console.log("Probs!");
                     this.obstacleProbabilitized();
                 }
             } else {
@@ -261,12 +273,67 @@ $(function () {
                 Game.displayMessage("YOU HAVE RETURNED TO THE SUBMARINE... ALIVE!");
                 Game.returnSafe();
             }
-            console.log("Game.player.distance: " + Game.player.distance);
-            console.log("Game.state.retractionTime: " + Game.state.retractionTime);
-
         },
-        triggerRetractionObstacle: function () {
+        triggerRetractionObstacle: function (forTestIndex) {
             console.log("Obstacle Triggered!")
+            Game.path.encounteringObstacle = true;
+            Game.state.obstacle = {};
+            if (forTestIndex) {
+                Game.state.obstacle.chosen = Game.activeRoom.obstacles[forTestIndex];
+            } else {
+                Game.state.obstacle.chosen = _.sample(Game.activeRoom.obstacles);
+            }
+            Game.displayMessage(Game.state.obstacle.chosen.description);
+            Game.playSound(Game.state.obstacle.chosen.sound);
+            Game.state.obstacle.timeoutId = setTimeout(_.bind(Game.state.obstacle.chosen.onFail, Game.activeRoom),2000);
+        },
+        obstacleResponse: function (e) {
+            if (!Game.path.encounteringObstacle) return;
+
+            var foot = null;
+            if (e.which == 65) { // a
+                foot = Game.AVOID_OPTIONS.LEFT;
+            } else if (e.which == 68) { // d
+                foot = Game.AVOID_OPTIONS.RIGHT;
+            }
+
+            if (foot) {
+                var currentTime = new Date();
+                if (Game.state.obstacle.chosen.toAvoid != Game.AVOID_OPTIONS.BOTH) { //if left or right
+                    if (foot == Game.state.obstacle.chosen.toAvoid) { //and chose correctly
+                        this.obstaclePass();
+                    } else { //fucked it up
+                        this.obstacleFail();
+                    }
+                } else { // BOTH
+                    if (Game.state.obstacle.lastFoot) {
+                        var timeDiff = currentTime.getTime() - Game.state.obstacle.LastStepTime.getTime();
+                        console.log (timeDiff);
+                        if (timeDiff < 100 && Game.state.obstacle.lastFoot != foot) {
+                            this.obstaclePass();
+                        } else { //fucked it up
+                            this.obstacleFail();
+                        }
+                    }
+                }
+                Game.state.obstacle.LastStepTime = currentTime; //store time key is pressed
+                Game.state.obstacle.lastFoot = foot; // set last key pressed
+            }
+        },
+        obstaclePass: function () {
+            console.log("Obstacle Passed!")
+            Game.path.encounteringObstacle = false;
+            Game.displayMessage("");
+            Game.pauseSound(Game.state.obstacle.chosen.sound);
+            clearTimeout(Game.state.obstacle.timeoutId);
+        },
+        obstacleFail: function () {
+            console.log("Obstacle Failed!")
+            Game.path.encounteringObstacle = false;
+            Game.displayMessage("");
+            Game.pauseSound(Game.state.obstacle.chosen.sound);
+            clearTimeout(Game.state.obstacle.timeoutId);
+            Game.state.obstacle.chosen.onFail.apply(Game.activeRoom);
         },
         showDeadMenu: function () {
             Game.player.canWalk = false;
@@ -285,15 +352,15 @@ $(function () {
             Game.activeRoom.rerender();
         },
         playSound: function (filename) {
-            var audio = new Audio('../assets/sounds/' + filename);
-            audio.play();
+            Game.audio = new Audio('../assets/sounds/' + filename);
+            Game.audio.play();
         },
         playSoundForever: function (filename) {
             Game.audio = new Audio('../assets/sounds/' + filename);
             Game.audio.setAttribute('loop', true);
             Game.audio.play();
         },
-        pauseSound: function (filename) {
+        pauseSound: function () {
             Game.audio.pause();
         }
     });

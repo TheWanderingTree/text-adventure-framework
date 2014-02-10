@@ -8,7 +8,7 @@ $(function () {
 
             },
             retractionTime: 0,
-            ripcordSpeed: 20,
+            ripcordSpeed: 40,
             exploring: true
         };
         Game.path = {
@@ -18,23 +18,24 @@ $(function () {
                     roomNames: ['ocean-empty']
                 },
                 {
-                    distance: 100,
+                    distance: 200,
                     roomNames: ['ocean-plateau']
                 },
                 {
-                    distance: 200,
+                    distance: 400,
                     roomNames: ['ocean-seaweed']
                 },
                 {
-                    distance: 300,
+                    distance: 600,
                     roomNames: ['ocean-chasm']
                 },
                 {
-                    distance: 400,
+                    distance: 800,
                     roomNames: ['ocean-wreck']
                 }
             ],
-            roomsChosen: []
+            roomsChosen: [],
+            encounteringObstacle: false
         }
         Game.player = {
             canWalk: false,
@@ -42,7 +43,7 @@ $(function () {
             distance: 0,
             walkThreshold: 450,
             distanceMultiplier: 0,
-            maxDistanceMultiplier: 4,
+            maxDistanceMultiplier: 14,
             maxStability: 5,
             obstacleProbability: 25
         };
@@ -95,8 +96,34 @@ $(function () {
             name: 'ocean-plateau',
 
             setup: function () {
-                this.listenTo(Game,"trip",this.explode);
+                var me = this;
+                this.listenTo(Game,"trip",function () {
+                    if (Game.activeRoom == me && me.mineField) {
+                        Game.activeRoom.explode();
+                    }
+                });
             },
+
+            obstacles: [
+                {
+                    description: "You hear a ticking sound behind you... *cough* on your left I think.",
+                    sound: "tick.wav",
+                    toAvoid: Game.AVOID_OPTIONS.LEFT,
+                    onFail: function () { this.explode(); }
+                },
+                {
+                    description: "You hear a ticking sound behind you... *cough* on your right I think.",
+                    sound: "tick.wav",
+                    toAvoid: Game.AVOID_OPTIONS.RIGHT,
+                    onFail: function () { this.explode(); }
+                },
+                {
+                    description: "You hear a ticking sound behind you... *cough* YEAH IT'S RIGHT BEHIND YOU.",
+                    sound: "tick.wav",
+                    toAvoid: Game.AVOID_OPTIONS.BOTH,
+                    onFail: function () { this.explode(); }
+                },
+            ],
 
             menuItems: [
                 {
@@ -105,7 +132,7 @@ $(function () {
                         this.mineField = false;
                         this.choiceMade = true;
                         Game.player.distanceMultiplier = 0;
-                        Game.player.maxDistanceMultiplier = 1;
+                        Game.player.maxDistanceMultiplier = 3;
                     }
                 },
                 {
@@ -130,13 +157,11 @@ $(function () {
             ],
 
             explode: function () {
-                if (Game.activeRoom == this && this.mineField == true) {
-                    Game.player.dead = true;
-                    $('body').removeClass('trip');
-                    Game.goto('player-dead-exploded');
-                    Game.showDeadMenu();
-                    Game.playSound('explode.mp3');
-                }
+                Game.player.dead = true;
+                $('body').removeClass('trip');
+                Game.goto('player-dead-exploded');
+                Game.showDeadMenu();
+                Game.playSound('explode.mp3');
             }
         });
 
@@ -147,8 +172,8 @@ $(function () {
                 {
                     description: "1: Go through the seaweed",
                     action: function () {
-                        this.seaweed = true;
                         this.choiceMade = true;
+                        this.seaweed = true;
                         Game.player.obstacleProbability += 10;
                         Game.player.stability = 1;
                         Game.player.maxStability = 1;
