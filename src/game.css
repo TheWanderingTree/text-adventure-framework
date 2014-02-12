@@ -37,7 +37,7 @@ h2 {
     color: cyan;
 }
 
-.trip {
+.trip, .snag {
     background: #010101;
     animation: tripflash 1s;
     -webkit-animation: tripflash 1s;

@@ -24,10 +24,7 @@ $(function () {
             }
         },
         render: function () {
-            if (this.room.choiceMade) {
-                this.validItems = [];
-                Game.player.canWalk = true;
-            } else {
+            if (!this.room.choiceMade && Game.state.exploring) {
                 this.validItems = _.filter(this.menuItems, function (item) {
                     if (!_.isFunction(item.showWhen)) {
                         return true;
@@ -35,6 +32,9 @@ $(function () {
                         return item.showWhen.apply(Game.activeRoom);
                     }
                 });
+            } else {
+                this.validItems = [];
+                Game.player.canWalk = true;
             }
             var str = this.tmpl({
                 actions: _.pluck(this.validItems, "description"),
@@ -167,7 +167,7 @@ $(function () {
             this.obstacleResponse(e);
         },
         walk: function (e) {
-            if (!Game.player.canWalk) return;
+            if (!Game.player.canWalk | !Game.state.exploring) return;
 
             //remove trip/unstable animation classes
             $('body').removeClass('trip');
@@ -238,11 +238,12 @@ $(function () {
             if (e.which == 8) { //backspace
                 Game.displayMessage("THE RIPCORD HAS BEEN PULLED!");
                 Game.state.exploring = false;
+                Game.player.canWalk = false;
                 this.obstacleProbabilitized = new Probability({
                     p: Game.player.obstacleProbability + '%',
                     f: _.bind(this.triggerRetractionObstacle, this)
                 });
-                Game.path.ripcordIntervalId = setInterval(_.bind(this.retraction, this),1500);
+                Game.path.ripcordIntervalId = setInterval(_.bind(this.retraction, this),900);
                 Game.activeRoom.rerender();
             }
         },
@@ -251,9 +252,12 @@ $(function () {
 
             Game.state.retractionTime++;
             Game.player.distance -= Game.state.ripcordSpeed;
+            Game.state.ripcordSpeed += 5;
+            if (Game.state.ripcordSpeed > Game.state.maxRipcordSpeed) { Game.state.ripcordSpeed = Game.state.maxRipcordSpeed };
             console.log("------------------------------------------------------------------");
             console.log("Game.state.retractionTime: " + Game.state.retractionTime);
             console.log("Game.player.distance: " + Game.player.distance);
+            console.log("Game.state.ripcordSpeed: " + Game.state.ripcordSpeed);
             var prevDistance = Game.path.landmarks[Game.path.roomsChosen.length - 1].distance;
             if (Game.player.distance < prevDistance) {
                 Game.path.roomsChosen.pop();
@@ -263,7 +267,7 @@ $(function () {
                 }
             }
             if (Game.player.distance > 0) {
-                if (Game.state.retractionTime%2 == 0) {
+                if (Game.state.retractionTime%3 == 0) {
                     console.log("Probs!");
                     this.obstacleProbabilitized();
                 }
@@ -277,6 +281,7 @@ $(function () {
         triggerRetractionObstacle: function (forTestIndex) {
             console.log("Obstacle Triggered!")
             Game.path.encounteringObstacle = true;
+            $('body').removeClass('snag');
             Game.state.obstacle = {};
             if (forTestIndex) {
                 Game.state.obstacle.chosen = Game.activeRoom.obstacles[forTestIndex];

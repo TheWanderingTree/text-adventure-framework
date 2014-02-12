@@ -8,7 +8,8 @@ $(function () {
 
             },
             retractionTime: 0,
-            ripcordSpeed: 40,
+            ripcordSpeed: 0,
+            maxRipcordSpeed: 40,
             exploring: true
         };
         Game.path = {
@@ -95,6 +96,7 @@ $(function () {
             snagged: function () {
                 $('body').addClass('snag');
                 Game.playSound('snagged.wav');
+                Game.state.ripcordSpeed = 0;
             }
         });
 
