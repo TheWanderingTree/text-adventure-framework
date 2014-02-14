@@ -9,13 +9,16 @@
         'test-bubbling.mp3',
         'test-tone.mp3'
     ]);
+    var flute;
     audio.on('all-loaded', function () {
         // options currently defined:
         var options = {
-            //startTime: 1, // delay begin for 1 second
+            //autoplay: 0 // delay begin for 1 second
             //loop: true,   // loop the full sound
             //loop: [1,2]   // loop a cropping of the sound, seconds 1 to 2
         };
-        audio.play('flute.mp3', options);
+        flute = audio.newSound('flute.mp3', options);
+        audio.play(flute, 1);
+        audio.stop(flute, 2);
     });
 </script>

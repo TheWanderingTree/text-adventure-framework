@@ -5,19 +5,20 @@ var Audio = function () {
 };
 _.extend(Audio.prototype, {
     buffers: {},
+    sounds: [],
     initialize: function (filenames) {
         try {
             window.AudioContext = window.AudioContext||window.webkitAudioContext;
             this.context = new AudioContext();
+
+            filenames = filenames || [];
+
+            for (var i = 0; i < filenames.length; i++) {
+                this.loadFile(filenames[i]);
+            }
         }
         catch(e) {
             console.error('Web Audio API is not supported in this browser');
-        }
-
-        filenames = filenames || [];
-
-        for (var i = 0; i < filenames.length; i++) {
-            this.loadFile(filenames[i]);
         }
     },
     loadFile: function (filename) {
@@ -38,15 +39,17 @@ _.extend(Audio.prototype, {
                 }
             }, function () {
                 me.buffers[filename] = false;
+                if (_.all(me.buffers,function (buffer) { return buffer !== null; })) {
+                    me.trigger("all-loaded");
+                }
             });
         }
         request.send();
     },
-    play: function (filename, options) {
+    newSound: function (filename, options) {
         if (!this.context) return;
 
         options = options || {};
-        options.startTime = options.startTime || 0;
 
         if (this.buffers[filename]) {
             var source = this.context.createBufferSource();
@@ -61,7 +64,32 @@ _.extend(Audio.prototype, {
                 }
             }
 
-            source.start(options.startTime);
+            var sound = {
+                source: source
+            };
+            var soundId = this.sounds.length;
+            this.sounds.push(sound);
+
+            if (_.isNumber(options.autoplay)) {
+                source.start(options.autoplay);
+            }
+            return soundId;
+        }
+    },
+    play: function (soundId, startTime) {
+        if (!this.context) return;
+
+        var sound = this.sounds[soundId];
+        if (sound) {
+            sound.source.start(startTime || 0);
+        }
+    },
+    stop: function (soundId, stopTime) {
+        if (!this.context) return;
+
+        var sound = this.sounds[soundId];
+        if (sound) {
+            sound.source.stop(stopTime || 0);
         }
     }
 });
