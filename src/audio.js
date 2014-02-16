@@ -1,96 +1,153 @@
-var Audio = function () {
-    if (this.initialize) {
-        this.initialize.apply(this, arguments);
-    }
-};
-_.extend(Audio.prototype, {
-    buffers: {},
-    sounds: [],
-    initialize: function (filenames) {
-        try {
-            window.AudioContext = window.AudioContext||window.webkitAudioContext;
-            this.context = new AudioContext();
-
-            filenames = filenames || [];
-
-            for (var i = 0; i < filenames.length; i++) {
-                this.loadFile(filenames[i]);
-            }
+$(function () {
+    window.Audio = function () {
+        if (this.initialize) {
+            this.initialize.apply(this, arguments);
         }
-        catch(e) {
-            console.error('Web Audio API is not supported in this browser');
+    };
+    window.Sound = function () {
+        if (this.initialize) {
+            this.initialize.apply(this, arguments);
         }
-    },
-    loadFile: function (filename) {
-        if (!this.context) return;
+    };
 
-        var me = this;
-        var request = new XMLHttpRequest();
-        request.open('GET', "../assets/sounds/" + filename, true);
-        request.responseType = 'arraybuffer';
+    _.extend(Audio.prototype, {
+        buffers: {},
 
-        me.buffers[filename] = null;
+        initialize: function (filenames) {
+            try {
+                window.AudioContext = window.AudioContext||window.webkitAudioContext;
+                this.context = new AudioContext();
 
-        request.onload = function() {
-            me.context.decodeAudioData(request.response, function(buffer) {
-                me.buffers[filename] = buffer;
-                if (_.all(me.buffers,function (buffer) { return buffer !== null; })) {
-                    me.trigger("all-loaded");
-                }
-            }, function () {
-                me.buffers[filename] = false;
-                if (_.all(me.buffers,function (buffer) { return buffer !== null; })) {
-                    me.trigger("all-loaded");
-                }
-            });
-        }
-        request.send();
-    },
-    newSound: function (filename, options) {
-        if (!this.context) return;
+                filenames = filenames || [];
 
-        options = options || {};
-
-        if (this.buffers[filename]) {
-            var source = this.context.createBufferSource();
-            source.buffer = this.buffers[filename];
-            source.connect(this.context.destination);
-
-            if (options.loop) {
-                source.loop = true;
-                if (_.isArray(options.loop)) {
-                    source.loopStart = options.loop[0];
-                    source.loopEnd = options.loop[1];
+                for (var i = 0; i < filenames.length; i++) {
+                    this.loadAsArrayBuffer(filenames[i]);
                 }
             }
-
-            var sound = {
-                source: source
-            };
-            var soundId = this.sounds.length;
-            this.sounds.push(sound);
-
-            if (_.isNumber(options.autoplay)) {
-                source.start(options.autoplay);
+            catch(e) {
+                console.error('Web Audio API is not supported in this browser');
             }
-            return soundId;
-        }
-    },
-    play: function (soundId, startTime) {
-        if (!this.context) return;
+        },
+        loadAsArrayBuffer: function (filename) {
+            if (!this.context) return;
 
-        var sound = this.sounds[soundId];
-        if (sound) {
-            sound.source.start(startTime || 0);
-        }
-    },
-    stop: function (soundId, stopTime) {
-        if (!this.context) return;
+            var me = this;
+            var request = new XMLHttpRequest();
+            request.open('GET', "../assets/sounds/" + filename, true);
+            request.responseType = 'arraybuffer';
 
-        var sound = this.sounds[soundId];
-        if (sound) {
-            sound.source.stop(stopTime || 0);
+            me.buffers[filename] = null;
+
+            request.onload = function() {
+                me.context.decodeAudioData(request.response, function(buffer) {
+                    me.buffers[filename] = buffer;
+
+                    me.trigger(filename + ":loaded");
+
+                    if (_.all(me.buffers,function (buffer) { return buffer !== null; })) {
+                        me.trigger("all-loaded");
+                    }
+                }, function () {
+                    me.buffers[filename] = false;
+                    if (_.all(me.buffers,function (buffer) { return buffer !== null; })) {
+                        me.trigger("all-loaded");
+                    }
+                });
+            }
+            request.send();
+        },
+        createSound: function (filename, options) {
+            return new Sound(this.context, this.buffers[filename], options);
         }
-    }
+    });
+    Audio.crossFade = function (fromSound, toSound, options) {
+        fromSound.fadeDown(options);
+        toSound.fadeUp(options);
+    };
+    _.extend(Audio.prototype, Backbone.Events);
+
+    _.extend(Sound.prototype, {
+        initialize: function (context, buffer, options) {
+            this.context = context;
+            if (!this.context) return;
+
+            options = options || {};
+
+            if (buffer) {
+                this.sourceNode = this.context.createBufferSource();
+                this.sourceNode.buffer = buffer;
+
+                this.gainNode = this.context.createGain();
+                this.sourceNode.connect(this.gainNode);
+
+                this.gainNode.connect(this.context.destination);
+
+                if (options.loop) {
+                    this.sourceNode.loop = true;
+                    if (_.isArray(options.loop)) {
+                        this.sourceNode.loopStart = options.loop[0];
+                        this.sourceNode.loopEnd = options.loop[1];
+                    }
+                }
+
+                if (_.isNumber(options.autoplay)) {
+                    this.sourceNode.start(options.autoplay);
+                }
+            }
+        },
+        play: function (options) {
+            if (!this.context) return;
+
+            options = options || {};
+            options.when = options.when || 0;
+            options.offset = options.offset || 0;
+            options.volume = _.isNumber(options.volume) ? options.volume : 1;
+
+            this.gainNode.gain.value = options.volume;
+
+            if (options.duration) {
+                this.sourceNode.start(options.when, options.offset, options.duration);
+            } else {
+                this.sourceNode.start(options.when, options.offset);
+            }
+        },
+        stop: function (when) {
+            if (!this.context) return;
+
+            when = when || 0;
+
+            this.sourceNode.stop(when);
+        },
+        fade: function (options) {
+            if (!this.context) return;
+
+            options = options || {};
+            options.when = options.when || this.context.currentTime;
+            options.volume = _.isNumber(options.volume) ? options.volume : 1;
+            options.duration = options.duration || 1;
+
+            this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, options.when);
+            this.gainNode.gain.linearRampToValueAtTime(options.volume, options.when + options.duration);
+        },
+        fadeUp: function (options) {
+            if (!this.context) return;
+
+            options = options || {};
+            options.volume = 1;
+
+            this.fade(options);
+        },
+        fadeDown: function (options) {
+            if (!this.context) return;
+
+            options = options || {};
+            options.volume = 0;
+
+            this.fade(options);
+        },
+        setVolume: function (value) {
+            this.gainNode.gain.value = value;
+        }
+    });
+    _.extend(Sound.prototype, Backbone.Events);
 });
-_.extend(Audio.prototype, Backbone.Events);

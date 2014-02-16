@@ -1,24 +1,45 @@
+<script src="../lib/jquery-1.8.3.js"></script>
 <script src="../lib/underscore.js"></script>
 <script src="../lib/backbone.js"></script>
 <script src="audio.js"></script>
 <script>
-    var audio = new Audio([
-        'desolation.mp3',
-        'explode.mp3',
-        'flute.mp3',
-        'test-bubbling.mp3',
-        'test-tone.mp3'
-    ]);
-    var flute;
-    audio.on('all-loaded', function () {
-        // options currently defined:
-        var options = {
-            //autoplay: 0 // delay begin for 1 second
-            //loop: true,   // loop the full sound
-            //loop: [1,2]   // loop a cropping of the sound, seconds 1 to 2
-        };
-        flute = audio.newSound('flute.mp3', options);
-        audio.play(flute, 1);
-        audio.stop(flute, 2);
+    $(function () {
+        var audio = new Audio([
+            'desolation.mp3',
+            'explode.mp3',
+            'flute.mp3',
+            'test-bubbling.mp3',
+            'test-tone.mp3'
+        ]);
+        window.audio = audio;
+
+        var hasFlute = false;
+        var hasExplode = false;
+
+        audio.on('flute.mp3:loaded', function (filename) {
+            hasFlute = true;
+            bothLoaded();
+        });
+        audio.on('explode.mp3:loaded', function (filename) {
+            hasExplode = true;
+            bothLoaded();
+        });
+
+        /*
+        hasFlute = true;
+        hasExplode = true;
+        audio.on('all-loaded', bothLoaded);
+        */
+
+        function bothLoaded() {
+            if (hasFlute && hasExplode) {
+                var flute = audio.createSound('flute.mp3');
+                var explode = audio.createSound('explode.mp3');
+                flute.play();
+                explode.play({ volume: 0 });
+                Audio.crossFade(flute, explode, { duration: 1.5 });
+            }
+        }
+
     });
 </script>
