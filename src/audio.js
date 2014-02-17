@@ -9,10 +9,15 @@ $(function () {
             this.initialize.apply(this, arguments);
         }
     };
+    window.CrossFade = function () {
+        if (this.initialize) {
+            this.initialize.apply(this, arguments);
+        }
+    };
 
     _.extend(Audio.prototype, {
         buffers: {},
-
+        managedSounds: {},
         initialize: function (filenames) {
             try {
                 window.AudioContext = window.AudioContext||window.webkitAudioContext;
@@ -57,13 +62,24 @@ $(function () {
             request.send();
         },
         createSound: function (filename, options) {
-            return new Sound(this.context, this.buffers[filename], options);
+            options = options || {};
+
+            var sound = new Sound(this.context, this.buffers[filename], options);
+            if (options.loop) {
+                this.managedSounds[filename] = sound;
+            }
+            return sound;
+        },
+        get: function (filename) {
+            return this.managedSounds[filename];
+        },
+        now: function () {
+            return this.context.currentTime;
+        },
+        listener: function () {
+            return this.context.listener;
         }
     });
-    Audio.crossFade = function (fromSound, toSound, options) {
-        fromSound.fadeDown(options);
-        toSound.fadeUp(options);
-    };
     _.extend(Audio.prototype, Backbone.Events);
 
     _.extend(Sound.prototype, {
@@ -80,36 +96,56 @@ $(function () {
                 this.gainNode = this.context.createGain();
                 this.sourceNode.connect(this.gainNode);
 
-                this.gainNode.connect(this.context.destination);
+                if (options.position) {
+                    this.pannerNode = this.context.createPanner();
+                    this.gainNode.connect(this.pannerNode);
+
+                    options.position = _.isArray(options.position) ? options.position : [0,0,0];
+
+                    this.setPosition(options.position[0], options.position[1], options.position[2]);
+
+                    this.pannerNode.connect(this.context.destination);
+                } else {
+                    this.gainNode.connect(this.context.destination);
+                }
 
                 if (options.loop) {
                     this.sourceNode.loop = true;
-                    if (_.isArray(options.loop)) {
-                        this.sourceNode.loopStart = options.loop[0];
-                        this.sourceNode.loopEnd = options.loop[1];
+                    if (_.isObject(options.loop)) {
+                        if (options.loop.start) {
+                            this.sourceNode.loopStart = options.loop.start;
+                        }
+                        if (options.loop.end) {
+                            this.sourceNode.loopEnd = options.loop.end;
+                        }
                     }
                 }
 
-                if (_.isNumber(options.autoplay)) {
-                    this.sourceNode.start(options.autoplay);
+                if (options.playbackRate) {
+                    this.sourceNode.playbackRate.value = options.playbackRate;
                 }
+
+                this.setVolume(_.isNumber(options.volume) ? options.volume : 1);
             }
         },
+
         play: function (options) {
             if (!this.context) return;
 
             options = options || {};
             options.when = options.when || 0;
             options.offset = options.offset || 0;
-            options.volume = _.isNumber(options.volume) ? options.volume : 1;
 
-            this.gainNode.gain.value = options.volume;
+            if (_.isNumber(options.volume)) {
+                this.setVolume(options.volume);
+            }
 
             if (options.duration) {
                 this.sourceNode.start(options.when, options.offset, options.duration);
             } else {
                 this.sourceNode.start(options.when, options.offset);
             }
+            return this;
         },
         stop: function (when) {
             if (!this.context) return;
@@ -117,17 +153,24 @@ $(function () {
             when = when || 0;
 
             this.sourceNode.stop(when);
+            return this;
         },
+
         fade: function (options) {
             if (!this.context) return;
 
             options = options || {};
-            options.when = options.when || this.context.currentTime;
-            options.volume = _.isNumber(options.volume) ? options.volume : 1;
-            options.duration = options.duration || 1;
 
-            this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, options.when);
-            this.gainNode.gain.linearRampToValueAtTime(options.volume, options.when + options.duration);
+            if (_.isNumber(options.volume)) {
+                options.when = options.when || this.context.currentTime;
+                options.duration = options.duration || 1;
+
+                this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, options.when);
+                this.gainNode.gain.linearRampToValueAtTime(options.volume, options.when + options.duration);
+            } else {
+                console.error("Cannot fade to an undefined volume.");
+            }
+            return this;
         },
         fadeUp: function (options) {
             if (!this.context) return;
@@ -136,6 +179,7 @@ $(function () {
             options.volume = 1;
 
             this.fade(options);
+            return this;
         },
         fadeDown: function (options) {
             if (!this.context) return;
@@ -144,10 +188,37 @@ $(function () {
             options.volume = 0;
 
             this.fade(options);
+            return this;
         },
+
         setVolume: function (value) {
             this.gainNode.gain.value = value;
+            return this;
+        },
+        setPosition: function (x, y, z) {
+            if (!this.pannerNode) return;
+
+            this.pannerNode.setPosition(x, y, z);
+            return this;
         }
     });
     _.extend(Sound.prototype, Backbone.Events);
+
+
+    _.extend(CrossFade.prototype, {
+        initialize: function (fromSound, toSound, initMix) {
+            this.fromSound = fromSound;
+            this.toSound = toSound;
+            this.setMix(initMix || 0);
+        },
+        setMix: function (value) {
+            if (!_.isNumber(value) || value > 1 || value < 0) return;
+
+            var gain1 = Math.cos(value * 0.5*Math.PI);
+            var gain2 = Math.cos((1.0 - value) * 0.5*Math.PI);
+
+            this.fromSound.setVolume(gain1);
+            this.toSound.setVolume(gain2);
+        }
+    });
 });
